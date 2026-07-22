@@ -6,9 +6,9 @@ from module.exception import TaskEnd
 from module.logger import logger
 from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main
+from tasks.GuildActivityMonitor.assets import GuildActivityMonitorAssets
 
-
-class ScriptTask(GameUi):
+class ScriptTask(GameUi, GuildActivityMonitorAssets):
 
     def run(self):
         """ 阴阳寮活动监控主函数
@@ -63,9 +63,6 @@ class ScriptTask(GameUi):
         log_timer = Timer(60)
         log_timer.start()
 
-        # 获取初始通知时间
-        init_time, _ = self.get_notification_info()
-
         stuck_interval = Timer(280)
         # 主监控循环
         while True:
@@ -85,13 +82,10 @@ class ScriptTask(GameUi):
 
             # 处理突发事件
             self.screenshot()
-
-            # 检测新通知
-            current_time, notification_text = self.get_notification_info()
-            if current_time > init_time and notification_text:
-                logger.info(f"检测到新通知: {notification_text}")
+            current_text = self.get_ocr_text()
+            if current_text:
                 for keyword, task_name in KEYWORD_MAP.items():
-                    if keyword in notification_text:
+                    if keyword in current_text:
                         logger.info(f"检测到关键字 '{keyword}'，启动任务: {task_name}")
                         self.set_next_run(task=task_name, success=False, finish=False, server=False, target=datetime.now())
                         recheck_interval = monitor_config.recheck_interval
@@ -100,44 +94,25 @@ class ScriptTask(GameUi):
 
             time.sleep(interval)
 
-    def get_notification_info(self) -> tuple:
+    def get_ocr_text(self) -> str:
+        """截取指定区域并返回 OCR 识别文本"""
         try:
-            output = self.device.adb_shell(['dumpsys', 'notification', '--noredact'])
-
-            # 通知时间提取逻辑 - 只获取最新的通知
-            notification_time = 0
-            notification_text = ""
-
-            # 查找所有通知块，每个块包含时间戳和文本
-            notification_blocks = re.findall(r'(when=(\d+)[\s\S]*?(?=when=|\Z))', output)
-            
-            if notification_blocks:
-                # 找到最新的通知块
-                latest_block_time = 0
-                latest_text = ""
-                
-                for block, time_str in notification_blocks:
-                    current_time = float(time_str)
-                    if current_time > latest_block_time:
-                        latest_block_time = current_time
-                        # 在当前块中查找活动类型
-                        if re.search(r'宴会[^\w]', block) or '寮宴会' in block:
-                            latest_text = '宴会'
-                        elif re.search(r'狭间[^\w]', block) or '狭间暗域' in block:
-                            latest_text = '狭间'
-                        elif re.search(r'退治[^\w]', block) or '首领退治' in block:
-                            latest_text = '退治'
-                        elif re.search(r'道馆[^\w]', block) or '道馆突破' in block:
-                            latest_text = '道馆'
-                
-                notification_time = latest_block_time
-                notification_text = latest_text
-
-            return notification_time, notification_text
+            self.screenshot()
+            DOKAN = self.O_GUILD_DOKAN.ocr(self.device.image)
+            if DOKAN != (0,0,0,0):
+                return '道馆'
+            ABYSS = self.O_GUILD_ABYSS.ocr(self.device.image)
+            if ABYSS != (0,0,0,0):
+                return '狭间'
+            BANQUET = self.O_GUILD_BANQUET.ocr(self.device.image)
+            if BANQUET != (0,0,0,0):
+                return '宴会'
+            RETREAT = self.O_GUILD_DEMON_RETREAT.ocr(self.device.image)
+            if RETREAT != (0,0,0,0):
+                return '退治'
+            raise ValueError("未监控到任务")
         except Exception as e:
-            logger.warning(f"获取通知失败: {e}")
-            return 0, ""
-
+            return "未监控到任务"
 
 if __name__ == '__main__':
     from module.config.config import Config
@@ -147,4 +122,3 @@ if __name__ == '__main__':
     d = Device(c)
     t = ScriptTask(c, d)
     t.run()
-

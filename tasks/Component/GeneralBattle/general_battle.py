@@ -33,7 +33,7 @@ from tasks.GameUi.page_definition import Page
 ExitMatcher = Union[Matcher | RecognizerLike | Page]
 BattleInspectionAction = Callable[["BattleContext"], None]
 PREPARE_CLICK_DELAY = 3.0
-QUICK_EXIT_WAIT_TIMEOUT = 5.0
+QUICK_EXIT_WAIT_TIMEOUT = 8.0
 
 
 @dataclass

@@ -81,7 +81,7 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
         @rtype:
         """
         logger.info("start switch_character")
-        self.ui_click(self.C_SA_LOGIN_FORM_SWITCH_SVR_BTN, self.I_SA_CHECK_SELECT_SVR_1)
+        self.ui_click(self.C_SA_LOGIN_FORM_SWITCH_SVR_BTN, self.I_SA_CHECK_SELECT_SVR_3)
         # 展开底部角色列表,显示角色所属服务器
         self.screenshot()
         while (not self.appear(self.I_SA_CHECK_SELECT_SVR_2)) and self.appear(self.I_SA_CHECK_SELECT_SVR_1):
@@ -90,7 +90,6 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
             self.wait_until_appear(self.I_SA_CHECK_SELECT_SVR_2, False, 1)
             # self.ui_click(self.C_SA_SELECT_SVR_CHARACTER_LIST, self.I_SA_CHECK_SELECT_SVR_2, 1.5)
             self.screenshot()
-
         self.O_SA_SELECT_SVR_CHARACTER_LIST.keyword = characterName
         lastCharacterNameList = []
         while 1:
@@ -240,17 +239,20 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
             self.screenshot()
             # 处于 选择服务器界面 直接点击空白区域退出该界面 进入切换账号流程
             if self.appear(self.I_SA_CHECK_SELECT_SVR_1) or self.appear(self.I_SA_CHECK_SELECT_SVR_2):
+                logger.info("1111111111111")
                 self.click(self.C_SA_LOGIN_FORM_CANCEL_SVR_SELECT)
                 continue
 
             # 处于选择 苹果安卓界面
             if self.appear(self.I_SA_LOGIN_FORM_APPLE):
+                logger.info("222222222222")
                 btn = self.I_SA_LOGIN_FORM_ANDROID if accountInfo.apple_or_android else self.I_SA_LOGIN_FORM_APPLE
                 self.ui_click_until_disappear(btn)
                 isAccountLogon = True
                 continue
             # 处于选择账号界面
             if self.appear(self.I_SA_NETEASE_GAME_LOGO) and not self.appear(self.I_SA_LOGIN_FORM_APPLE):
+                logger.info("33333333333333")
                 if not accountInfo.account:
                     logger.error("param account is None,cannot switch account")
                     return False
@@ -267,6 +269,7 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
                 continue
             # 在用户中心界面
             if self.appear(self.I_SA_SWITCH_ACCOUNT_BTN):
+                logger.info("44444444444444444")
                 # 如果当前已登录用户就是account
                 ocrRes = self.O_SA_LOGIN_FORM_USER_CENTER_ACCOUNT.ocr_single(self.device.image)
                 # NOTE 由于邮箱账号@符号极易被误识别为其他,故对账号信息做预处理 便于比对
@@ -283,8 +286,10 @@ class LoginAccount(BaseTask, SwitchAccountAssets):
                 continue
             # 在游戏登录界面 不在用户中心 不在切换账号界面
             if not (self.appear(self.I_SA_NETEASE_GAME_LOGO) or self.appear(self.I_SA_SWITCH_ACCOUNT_BTN)):
+                logger.info("5555555555555555")
                 # 判断是否已经账号登录
                 if not isAccountLogon:
+                    logger.info("6666666666666666")
                     self.click(self.C_SA_LOGIN_FORM_USER_CENTER)
                     continue
 

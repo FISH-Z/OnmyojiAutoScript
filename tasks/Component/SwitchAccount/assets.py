@@ -41,7 +41,7 @@ class SwitchAccountAssets:
 	# 选择服务器界面 底部角色所属服务器名 列表 
 	O_SA_SELECT_SVR_SVR_LIST = RuleOcr(roi=(205,540,815,25), area=(205,540,815,25), mode="FULL", method="Default", keyword="", name="sa_select_svr_svr_list")
 	# 选择服务器界面 底部角色名 列表 
-	O_SA_SELECT_SVR_CHARACTER_LIST = RuleOcr(roi=(205,570,815,40), area=(205,570,815,40), mode="FULL", method="Default", keyword="", name="sa_select_svr_character_list")
+	O_SA_SELECT_SVR_CHARACTER_LIST = RuleOcr(roi=(410,124,658,494), area=(410,124,658,494), mode="FULL", method="Default", keyword="", name="sa_select_svr_character_list")
 	# 选择账号界面 账号列表 
 	O_SA_ACCOUNT_ACCOUNT_LIST = RuleOcr(roi=(460,280,440,330), area=(460,280,440,330), mode="FULL", method="Default", keyword="", name="sa_account_account_list")
 	# 选择账号界面 已选择的账号 
@@ -77,12 +77,14 @@ class SwitchAccountAssets:
 	# 登录界面-选取账号界面-账号下拉菜单-已经打开标志. 
 	I_SA_ACCOUNT_LOGIN_BTN = RuleImage(roi_front=(400,400,480,90), roi_back=(400,400,480,90), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/sa_account_login_btn.png")
 	# 登录界面-选择手机类型为苹果. 
-	I_SA_LOGIN_FORM_APPLE = RuleImage(roi_front=(490,350,100,100), roi_back=(490,350,100,100), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/sa_login_form_apple.png")
+	I_SA_LOGIN_FORM_APPLE = RuleImage(roi_front=(0,0,1280,720), roi_back=(0,0,1280,720), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/sa_login_form_apple.png")
 	# 登录界面-选择手机类型为android 
 	I_SA_LOGIN_FORM_ANDROID = RuleImage(roi_front=(690,350,100,100), roi_back=(690,350,100,100), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/sa_login_form_android.png")
 	# 判断是否在 选择服务器 界面的标志物 角色的服务器图标还未显示时 
 	I_SA_CHECK_SELECT_SVR_1 = RuleImage(roi_front=(240,530,120,40), roi_back=(240,530,120,40), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/sa_check_select_svr.png")
 	# 判断是否在 选择服务器 界面的标志物 角色的服务器图标已经显示时 
 	I_SA_CHECK_SELECT_SVR_2 = RuleImage(roi_front=(240,410,120,40), roi_back=(240,410,120,40), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/sa_check_select_svr.png")
+
+	I_SA_CHECK_SELECT_SVR_3 = RuleImage(roi_front=(0,0,1280,720), roi_back=(0,0,1280,720), threshold=0.8, method="Template matching", file="./tasks/Component/SwitchAccount/res/sa_check_select_svr_1.png")
 
 

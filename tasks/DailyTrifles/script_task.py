@@ -252,12 +252,10 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         # 购买体力
         while 1:
             self.screenshot()
-            logger.info('33333333333333333333')
             # count, price = detect_buy_count(roi)
             # if count >= self.config.model.daily_trifles.trifles_config.buy_sushi_count:
             #     break
             if self.appear(self.I_STORE_COST_TYPE_JADE):
-                logger.info('2222222222222222222222')
                 count, price = detect_buy_count(self.I_STORE_COST_TYPE_JADE)
                 if count >= self.config.daily_trifles.trifles_config.buy_sushi_count:
                     break
@@ -266,7 +264,6 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
                 continue
 
             if self.appear(self.I_SPECIAL_SUSHI):
-                logger.info('111111111111111111111')
                 # 此处确定当前购买体力所需勾玉数量的位置,用于后续识别
                 count, price = detect_buy_count(self.I_SPECIAL_SUSHI)
                 if count >= self.config.daily_trifles.trifles_config.buy_sushi_count:

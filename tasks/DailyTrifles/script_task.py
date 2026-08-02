@@ -167,7 +167,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         check_timer.start()
         while 1:
             self.screenshot()
-
+            sleep(1)
             if self.appear_then_click(self.I_CLICK_BLESS, interval=1):
                 continue
             if self.appear_then_click(self.I_ONE_CLICK_BLESS, interval=1):
@@ -207,10 +207,12 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         self.screenshot()
         if not self.appear(self.I_GIFT_SIGN):
             logger.warning('There is no gift sign')
+            self.goto_page(page_main)
             return
 
         if self.ui_get_reward(self.I_GIFT_SIGN, click_interval=2.5):
             logger.info('Get reward of gift sign')
+        self.goto_page(page_main)
 
     def run_buy_sushi(self):
         logger.hr('store sushi', 2)

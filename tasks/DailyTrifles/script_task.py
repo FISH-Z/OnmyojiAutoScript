@@ -300,7 +300,7 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         check_timer.start()
         while 1:
             self.screenshot()
-            sleep(1)
+
             if self.appear_then_click(self.I_CLICK_BLESS, interval=1):
                 continue
             if self.appear_then_click(self.I_ONE_CLICK_BLESS, interval=1):
@@ -340,12 +340,10 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         self.screenshot()
         if not self.appear(self.I_GIFT_SIGN):
             logger.warning('There is no gift sign')
-            self.goto_page(page_main)
             return
 
         if self.ui_get_reward(self.I_GIFT_SIGN, click_interval=2.5):
             logger.info('Get reward of gift sign')
-        self.goto_page(page_main)
 
     def run_buy_sushi(self):
         logger.hr('store sushi', 2)
@@ -360,8 +358,8 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
                 break
             if self.appear_then_click(RichManAssets.I_MALL_SUNDRY, interval=1):
                 continue
-            # if self.appear_then_click(RichManAssets.I_SIDE_SURE_SPECIAL, interval=1):
-            #     continue
+            if self.appear_then_click(RichManAssets.I_SIDE_SURE_SPECIAL, interval=1):
+                continue
 
         def detect_buy_count(base_element) -> (int, int):
             # 返回count,price
@@ -379,11 +377,13 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
                 _price = int(_price)
             except Exception as e:
                 _price = MAX_PRICE
+
             if _price < 60:
                 return 0, MAX_PRICE
             _count = (_price - 60) / 20
             return _count, _price
 
+        roi = None
         # 购买体力
         while 1:
             self.screenshot()

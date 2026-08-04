@@ -379,12 +379,10 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
         while 1:
             from tasks.RichMan.assets import RichManAssets
             self.screenshot()
-            if self.appear(RichManAssets.I_SIDE_CHECK_SPECIAL):
-                break
             if self.appear_then_click(RichManAssets.I_MALL_SUNDRY, interval=1):
                 continue
-            if self.appear_then_click(RichManAssets.I_SIDE_SURE_SPECIAL, interval=1):
-                continue
+            if self.appear(RichManAssets.I_SIDE_CHECK_SPECIAL):
+                break
 
         def detect_buy_count(base_element) -> (int, int):
             # 返回count,price
@@ -429,6 +427,9 @@ class ScriptTask(GameUi, Summon, DailyTriflesAssets):
                 if count >= self.config.daily_trifles.trifles_config.buy_sushi_count:
                     break
                 self.ui_click(self.I_SPECIAL_SUSHI, stop=self.I_STORE_COST_TYPE_JADE, interval=2)
+                continue
+
+            if self.ui_reward_appear_click():
                 continue
         self.config.daily_trifles.done_record.sushi_dt = datetime.now()
 

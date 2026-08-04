@@ -110,7 +110,7 @@ class ScriptTask(GameUi, SoulsTidyAssets):
             while 1:
                 found = self.find_discard_souls()
                 if found is None:
-                    continue
+                    break
                 if not found:
                     break
                 self.click(self.L_ONE, interval=2.5)

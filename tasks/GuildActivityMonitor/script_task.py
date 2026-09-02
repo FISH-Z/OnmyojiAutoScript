@@ -1,6 +1,7 @@
 import re
 import time
 from datetime import datetime, timedelta
+
 from module.base.timer import Timer
 from module.exception import TaskEnd
 from module.logger import logger
@@ -11,17 +12,22 @@ from tasks.GuildActivityMonitor.assets import GuildActivityMonitorAssets
 class ScriptTask(GameUi, GuildActivityMonitorAssets):
 
     def run(self):
-        """ 阴阳寮活动监控主函数
+        """阴阳寮活动监控主函数"""
+        if not self.check_run_days():
+            raise TaskEnd('GuildActivityMonitor')
+        self.goto_page(page_main)
+        keyword_map = self.build_keyword_map()
+        self.monitor_activities(keyword_map)
 
-        :return:
-        """
+    def check_run_days(self) -> bool:
+        """检查今天是否在运行日期内，设置下次运行时间"""
         monitor_config = self.config.guild_activity_monitor.guild_activity_monitor_combat_time
         now = datetime.now()
         today = now.weekday() + 1
         run_days = sorted({day for day in map(int, re.findall(r'\d+', monitor_config.run_days)) if 1 <= day <= 7})
         if not run_days:
             logger.warning(f"运行日期配置无效: {monitor_config.run_days}，跳过 GuildActivityMonitor")
-            raise TaskEnd('GuildActivityMonitor')
+            return False
 
         in_run_days = today in run_days
         candidate_days = [day for day in run_days if day != today] if in_run_days else run_days
@@ -33,40 +39,41 @@ class ScriptTask(GameUi, GuildActivityMonitorAssets):
         next_target = datetime.combine(next_date.date(), server_update) if use_server_time else next_date
         status = '在' if in_run_days else '不在'
         action = '本次继续执行' if in_run_days else '跳过 GuildActivityMonitor'
-        logger.info(f"今天是周{today}，{status}配置运行日期({monitor_config.run_days})内，"f"{action}，下次运行时间: {next_target}")
-        self.set_next_run(task='GuildActivityMonitor',success=None,finish=False,server=False,target=next_target)
-        if not in_run_days:
-            raise TaskEnd('GuildActivityMonitor')
+        logger.info(f"今天是周{today}，{status}配置运行日期({monitor_config.run_days})内，"
+                    f"{action}，下次运行时间: {next_target}")
+        self.set_next_run(task='GuildActivityMonitor', success=None, finish=False, server=False, target=next_target)
+        return in_run_days
 
-        # 构建关键字映射
-        self.goto_page(page_main)
+    def build_keyword_map(self) -> dict:
+        """构建活动关键字到任务名的映射"""
         guild_config = self.config.guild_activity_monitor.guild_activity
-        KEYWORD_MAP = {
+        keyword_map = {
             '道馆': 'Dokan' if guild_config.Dokan else None,
             '狭间': 'AbyssShadows' if guild_config.AbyssShadows else None,
             '宴会': 'GuildBanquet' if guild_config.GuildBanquet else None,
             '退治': 'DemonRetreat' if guild_config.DemonRetreat else None,
         }
-        KEYWORD_MAP = {k: v for k, v in KEYWORD_MAP.items() if v}
-        monitored_activities = list(KEYWORD_MAP.keys())
-        logger.info(f"监控活动: {monitored_activities}")
+        keyword_map = {k: v for k, v in keyword_map.items() if v}
+        logger.info(f"监控活动: {list(keyword_map.keys())}")
+        return keyword_map
 
-        # 初始化监控配置
+    def monitor_activities(self, keyword_map: dict):
+        """启动活动监控循环"""
         monitor_config = self.config.guild_activity_monitor.guild_activity_monitor_combat_time
-        duration_minutes = monitor_config.monitor_duration
         interval = monitor_config.detection_interval
-        logger.info(f"开始阴阳寮活动监控，持续{duration_minutes}分钟，每{interval}秒检测一次")
+        use_ocr = monitor_config.use_ocr
+        keywords = list(keyword_map.keys())
+        logger.info(f"开始阴阳寮活动监控，持续{monitor_config.monitor_duration}分钟，"
+                    f"每{interval}秒检测一次，模式: {'ocr' if use_ocr else 'adb'}")
 
-        # 初始化定时器
         check_timer = Timer(monitor_config.monitor_duration * 60)
         check_timer.start()
         log_timer = Timer(60)
         log_timer.start()
 
         stuck_interval = Timer(280)
-        # 主监控循环
         while True:
-            if not stuck_interval.started() or stuck_interval.reached():  # 重置等待间隔, 防止等待超时
+            if not stuck_interval.started() or stuck_interval.reached():
                 self.device.stuck_record_clear()
                 self.device.stuck_record_add('PAUSE')
                 stuck_interval.reset()
@@ -80,7 +87,6 @@ class ScriptTask(GameUi, GuildActivityMonitorAssets):
                 logger.info(f"监控中... 剩余时间: {remaining}分钟")
                 log_timer.reset()
 
-            # 处理突发事件
             self.screenshot()
             current_text = self.get_ocr_text()
             if current_text:

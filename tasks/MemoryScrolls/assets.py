@@ -47,7 +47,7 @@ class MemoryScrollsAssets:
 	# 大绘卷不足 
 	I_MS_ZERO_L = RuleImage(roi_front=(982,408,51,27), roi_back=(982,408,51,27), threshold=0.8, method="Template matching", file="./tasks/MemoryScrolls/ms/ms_ms_zero_l.png")
 	# 绘卷到达95%进度 
-	I_MS_COMPLETE_95 = RuleImage(roi_front=(654,562,8,18), roi_back=(654,562,8,18), threshold=0.8, method="Template matching", file="./tasks/MemoryScrolls/ms/ms_ms_complete_100.png")
+	I_MS_COMPLETE_95 = RuleImage(roi_front=(0,0,1280,720), roi_back=(0,0,1280,720), threshold=0.8, method="Template matching", file="./tasks/MemoryScrolls/ms/ms_ms_complete_100.png")
 	# 小碎片 
 	I_MS_FRAGMENT_S = RuleImage(roi_front=(651,25,26,23), roi_back=(640,0,58,63), threshold=0.8, method="Template matching", file="./tasks/MemoryScrolls/ms/ms_ms_fragment_s.png")
 	# 小碎片满50 

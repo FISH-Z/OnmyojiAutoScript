@@ -186,10 +186,6 @@ page_draft_duel = Page(GameUiAssets.I_CHECK_DRAFT_DUEL, category="global")
 page_draft_duel.connect(page_town, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_draft_duel->page_town")
 page_town.connect(page_draft_duel, GameUiAssets.I_TOWN_GOTO_DRAFT_DUEL, key="page_town->page_draft_duel")
 
-page_hyakkisen = Page(GameUiAssets.I_CHECK_HYAKKISEN, category="global")
-page_hyakkisen.connect(page_town, GlobalGameAssets.I_UI_BACK_YELLOW, key="page_hyakkisen->page_town")
-page_town.connect(page_hyakkisen, GameUiAssets.I_TOWN_GOTO_HYAKKISEN, key="page_town->page_hyakkisen")
-
 page_hyakkiyakou = Page(GameUiAssets.I_CHECK_KYAKKIYAKOU, category="global")
 page_hyakkiyakou.connect(page_town, GlobalGameAssets.I_UI_BACK_RED, key="page_hyakkiyakou->page_town")
 page_town.connect(page_hyakkiyakou, GameUiAssets.I_TOWN_GOTO_HYAKKIYAKOU, key="page_town->page_hyakkiyakou")
@@ -319,6 +315,7 @@ page_reward = Page(
     any_of(
         GeneralBattleAssets.I_REWARD,
         GeneralBattleAssets.I_GB_SKIN_CONFIRM,
+        GeneralBattleAssets.I_OVER_GHOST,
         GeneralBattleAssets.I_REWARD_STATISTICS,
         GeneralBattleAssets.I_REWARD_GOLD,
         GeneralBattleAssets.I_REWARD_EXP_SOUL_4,
@@ -331,7 +328,21 @@ page_reward = Page(
     category="global",
     priority=25
 )
-page_reward.add_enter_success_hooks(lambda _task: random_click())
+
+def handle_battle_reward_page(task) -> bool:
+    """处理战斗奖励页面(页面跳转才会使用该逻辑)
+
+    Args:
+        task: 当前触发页面 hook 的任务实例。
+
+    Returns:
+        bool: 执行结果
+    """
+    if task.appear_then_click(GeneralBattleAssets.I_OVER_GHOST, interval=0.8):
+        return True
+    return task.click(random_click(), interval=0.8)
+
+page_reward.add_enter_success_hooks(handle_battle_reward_page)
 
 page_battle_team_exit = Page(GeneralBattleAssets.I_GB_CHECK_TEAM_EXIT, priority=75)
 page_battle_team = Page(any_of(GeneralInviteAssets.I_GI_EMOJI_1, GeneralInviteAssets.I_GI_EMOJI_2,

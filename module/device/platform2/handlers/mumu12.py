@@ -1,5 +1,3 @@
-import ctypes
-import json
 import os
 import re
 import typing as t
@@ -53,8 +51,7 @@ class MuMu12Handler(EmulatorHandler):
         return None
 
     def _resolve_console(self, instance) -> t.Optional[str]:
-        emulator = getattr(instance, 'emulator', None)
-        exe = getattr(emulator, 'path', '')
+        exe = getattr(getattr(instance, 'emulator', None), 'path', '')
         console = self.single_to_console(exe) if isinstance(exe, str) else None
         if not console:
             logger.warning(f'Cannot resolve MuMu control executable from path {exe}')
@@ -123,120 +120,3 @@ class MuMu12Handler(EmulatorHandler):
             return None
         # MuMuManager.exe control -v 1 shutdown
         return f'"{console}" control -v {mumu_id} shutdown'
-
-    # ------------------------------------------------------------------
-    # 现代 MuMu 专属扩展
-    # ------------------------------------------------------------------
-
-    def build_launch_confirm_timer(self, instance):
-        from module.base.timer import Timer
-        return Timer(12).start()
-
-    def build_stop_confirm_timer(self, instance) -> t.Any:
-        from module.base.timer import Timer
-        return Timer(30).start()
-
-    def query_player_info(self, instance, platform) -> dict:
-        mumu_id = self.get_instance_id(instance)
-        if mumu_id is None:
-            logger.warning(f'Cannot get MuMu instance index from name {instance.name}')
-            return {}
-
-        manager = self._resolve_console(instance)
-        if manager is None:
-            return {}
-        command = f'"{manager}" info -v {mumu_id}'
-        try:
-            result = platform.execute_output(command, timeout=10)
-        except Exception as e:
-            logger.warning(f'[emu-state] query failed: serial={instance.serial}, error={e}')
-            return {}
-
-        output = '\n'.join(
-            part.strip()
-            for part in [result.stdout, result.stderr]
-            if isinstance(part, str) and part.strip()
-        )
-        if not output:
-            return {}
-
-        try:
-            player_info = json.loads(output)
-        except json.JSONDecodeError:
-            logger.warning(f'[emu-state] invalid info output: serial={instance.serial}, output={output}')
-            return {}
-        if not isinstance(player_info, dict):
-            logger.warning(f'[emu-state] invalid info type: serial={instance.serial}, output={output}')
-            return {}
-        return player_info
-
-    @staticmethod
-    def _parse_process_state(player_info: dict) -> str:
-        if not player_info:
-            return 'unknown'
-
-        error_code = player_info.get('error_code')
-        if error_code not in (None, 0):
-            return 'unknown'
-
-        if 'is_process_started' not in player_info:
-            # Some MuMu12 versions omit process fields after a successful shutdown.
-            return 'stopped' if error_code == 0 else 'unknown'
-
-        process_started = player_info['is_process_started']
-        if isinstance(process_started, bool):
-            return 'running' if process_started else 'stopped'
-        if isinstance(process_started, int) and process_started in (0, 1):
-            return 'running' if process_started else 'stopped'
-        return 'unknown'
-
-    def check_stop_state(self, instance, platform) -> str:
-        player_info = self.query_player_info(instance, platform)
-        return self._parse_process_state(player_info)
-
-    def try_hide_window(self, instance, platform, info=None) -> bool:
-        mumu_id = self.get_instance_id(instance)
-        if mumu_id is None:
-            return False
-
-        if info is None:
-            info = self.query_player_info(instance, platform)
-        if not info:
-            return False
-
-        hwnd = info.get('main_wnd')
-        if isinstance(hwnd, str):
-            try:
-                hwnd = int(hwnd, 16)
-            except ValueError:
-                return False
-        if not isinstance(hwnd, int) or hwnd <= 0:
-            return False
-        if not ctypes.windll.user32.IsWindow(hwnd):
-            return False
-
-        from module.device.platform2.platform_windows import hide_window
-        hide_window(hwnd)
-        return True
-
-    def check_launch_state(self, instance, state) -> tuple:
-        if state.launch_confirm is None:
-            return 'ready', None
-
-        player_info = self.query_player_info(instance, state._platform)
-        current_state = 'unknown'
-        process_state = self._parse_process_state(player_info)
-        if process_state == 'stopped':
-            current_state = 'stopped'
-        elif process_state == 'running':
-            current_state = player_info.get('player_state') or (
-                'start_finished' if player_info.get('is_android_started', False) else 'starting'
-            )
-        if current_state == 'stopped':
-            if state.launch_confirm.reached():
-                logger.warning(f'[emu-start] launch not started: serial={state.serial}')
-                return 'fail', player_info
-            return 'wait', player_info
-
-        state.launch_confirm = None
-        return 'ready', player_info

@@ -90,7 +90,7 @@ class ScriptTask(GameUi, GuildActivityMonitorAssets):
             self.screenshot()
             current_text = self.get_ocr_text()
             if current_text:
-                for keyword, task_name in KEYWORD_MAP.items():
+                for keyword, task_name in keyword_map.items():
                     if keyword in current_text:
                         logger.info(f"检测到关键字 '{keyword}'，启动任务: {task_name}")
                         self.set_next_run(task=task_name, success=False, finish=False, server=False, target=datetime.now())

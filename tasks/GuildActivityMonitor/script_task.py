@@ -9,7 +9,6 @@ from tasks.GameUi.game_ui import GameUi
 from tasks.GameUi.page import page_main
 from tasks.GuildActivityMonitor.assets import GuildActivityMonitorAssets
 
-
 class ScriptTask(GameUi, GuildActivityMonitorAssets):
 
     def run(self):
@@ -72,12 +71,6 @@ class ScriptTask(GameUi, GuildActivityMonitorAssets):
         log_timer = Timer(60)
         log_timer.start()
 
-        if use_ocr:
-            init_keyword = self.get_notification_info_ocr(keywords)
-            logger.info(f"初始通知关键字: {init_keyword or '无'}")
-        else:
-            init_time, _ = self.get_notification_info(keywords)
-
         stuck_interval = Timer(280)
         while True:
             if not stuck_interval.started() or stuck_interval.reached():
@@ -95,58 +88,37 @@ class ScriptTask(GameUi, GuildActivityMonitorAssets):
                 log_timer.reset()
 
             self.screenshot()
-
-            if use_ocr:
-                notification_text = self.get_notification_info_ocr(keywords)
-                if notification_text and notification_text != init_keyword:
-                    self.trigger_activity_task(notification_text, keyword_map[notification_text])
-            else:
-                current_time, notification_text = self.get_notification_info(keywords)
-                if current_time > init_time and notification_text:
-                    task_name = keyword_map.get(notification_text)
-                    if task_name:
-                        self.trigger_activity_task(notification_text, task_name)
+            current_text = self.get_ocr_text()
+            if current_text:
+                for keyword, task_name in KEYWORD_MAP.items():
+                    if keyword in current_text:
+                        logger.info(f"检测到关键字 '{keyword}'，启动任务: {task_name}")
+                        self.set_next_run(task=task_name, success=False, finish=False, server=False, target=datetime.now())
+                        recheck_interval = monitor_config.recheck_interval
+                        self.set_next_run(task='GuildActivityMonitor', success=False, finish=False, server=False, target=datetime.now() + timedelta(minutes=recheck_interval))
+                        raise TaskEnd('GuildActivityMonitor')
 
             time.sleep(interval)
 
-    def trigger_activity_task(self, keyword, task_name):
-        """检测到活动关键字后拉起对应任务并结束监控"""
-        logger.info(f"检测到关键字 '{keyword}'，启动任务: {task_name}")
-        monitor_config = self.config.guild_activity_monitor.guild_activity_monitor_combat_time
-        self.set_next_run(task=task_name, success=False, finish=False, server=False, target=datetime.now())
-        self.set_next_run(task='GuildActivityMonitor', success=False, finish=False, server=False,
-                          target=datetime.now() + timedelta(minutes=monitor_config.recheck_interval))
-        raise TaskEnd('GuildActivityMonitor')
-
-    def get_notification_info(self, keywords: list) -> tuple:
-        """通过adb读取系统通知，返回最新活动通知的时间戳和关键字"""
+    def get_ocr_text(self) -> str:
+        """截取指定区域并返回 OCR 识别文本"""
         try:
-            output = self.device.adb_shell(['dumpsys', 'notification', '--noredact'])
-            notification_blocks = re.findall(r'(when=(\d+)[\s\S]*?(?=when=|\Z))', output)
-            if not notification_blocks:
-                return 0, ""
-            latest_time = 0
-            latest_text = ""
-            for block, time_str in notification_blocks:
-                current_time = float(time_str)
-                for keyword in keywords:
-                    if keyword in block and current_time > latest_time:
-                        latest_time = current_time
-                        latest_text = keyword
-                        break
-            return latest_time, latest_text
+            self.screenshot()
+            DOKAN = self.O_GUILD_DOKAN.ocr(self.device.image)
+            if DOKAN != (0,0,0,0):
+                return '道馆'
+            ABYSS = self.O_GUILD_ABYSS.ocr(self.device.image)
+            if ABYSS != (0,0,0,0):
+                return '狭间'
+            BANQUET = self.O_GUILD_BANQUET.ocr(self.device.image)
+            if BANQUET != (0,0,0,0):
+                return '宴会'
+            RETREAT = self.O_GUILD_DEMON_RETREAT.ocr(self.device.image)
+            if RETREAT != (0,0,0,0):
+                return '退治'
+            raise ValueError("未监控到任务")
         except Exception as e:
-            logger.warning(f"获取通知失败: {e}")
-            return 0, ""
-
-    def get_notification_info_ocr(self, keywords: list) -> str:
-        """通过OCR识别屏幕通知区域，返回活动关键字"""
-        for keyword in keywords:
-            result = self.O_GUILD_ACTIVITY_NOTIFY.ocr(self.device.image, keyword=keyword)
-            if result != (0, 0, 0, 0):
-                return keyword
-        return ''
-
+            return "未监控到任务"
 
 if __name__ == '__main__':
     from module.config.config import Config
